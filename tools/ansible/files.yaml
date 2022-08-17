@@ -1,0 +1,20 @@
+# Moves files for running DistributedStreamingCC to the workers
+- hosts: workers
+  tasks:
+    - name: Make executable location
+      file:
+        path: /home/{{ansible_user_id}}/DistributedStreamingCC/build
+        state: directory
+    - name: Copy executables to workers
+      copy:
+        src: '{{item}}'
+        dest: /home/{{ansible_user_id}}/DistributedStreamingCC/build
+        mode: 0700
+      loop:
+        - /home/{{ansible_user_id}}/DistributedStreamingCC/build/speed_expr
+        - /home/{{ansible_user_id}}/DistributedStreamingCC/build/distrib_tests
+        - /home/{{ansible_user_id}}/DistributedStreamingCC/build/query_expr
+    - name: Copy hostfile to workers
+      copy:
+        src: /home/{{ansible_user_id}}/hostfile
+        dest: /home/{{ansible_user_id}}
