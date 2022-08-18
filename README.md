@@ -5,8 +5,8 @@ A distributed graph sketching system that solves the connected components proble
 ### Operating System
 This code has been tested on ubuntu-20 and ubuntu-18. It will likely work on most linux based systems.
 ### Installation
- 1. Clone this repository
- 2. Install dependencies `sudo apt install git gcc-c++ cmake openmpi-bin libopenmpi-dev`
+ 1. Install dependencies `sudo apt install git cmake openmpi-bin libopenmpi-dev`
+ 2. Clone this repository
  3. Create build directory under landscape dir. `mkdir landscape/build`
  4. Build project `cd landscape/build ; cmake .. ; cmake --build .`
  
