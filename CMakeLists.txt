@@ -40,7 +40,7 @@ endif()
 FetchContent_Declare(
   GraphZeppelin
 
-  GIT_REPOSITORY      https://github.com/GraphStreamingProject/GraphZeppelin
+  GIT_REPOSITORY      https://github.com/landscapegraph/anon-graphzeppelin.git
   GIT_TAG             main
 )
 FetchContent_MakeAvailable(GraphZeppelin)
