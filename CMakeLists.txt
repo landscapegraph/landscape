@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS ON)
 
-project(Landscape)
+project(DistributedStreamingCC)
 
 # Make the default build type Release. If user or another
 # project sets a different value than use that
@@ -26,6 +26,9 @@ else()
   message(STATUS "${CMAKE_CXX_COMPILER_ID} not recognized, no flags added")
 endif()
 
+#add_compile_options(-fsanitize=address)
+#add_link_options(-fsanitize=address)
+
 ######
 # Get MPI for distributed communication
 ######
@@ -35,6 +38,8 @@ add_definitions(-DOMPI_SKIP_MPICXX)
 if(MPI_CXX_FOUND)
        message("Found MPI_CXX")
 endif()
+
+# set(FETCHCONTENT_UPDATES_DISCONNECTED)
 
 # Install GraphZeppelin Project
 FetchContent_Declare(
@@ -60,43 +65,45 @@ endif()
 
 # The library for distributing the CPU work for
 # generating sketch deltas
-add_library(Landscape
+add_library(DistribUpdateStreamingCC
   src/worker_cluster.cpp
   src/work_distributor.cpp
   src/distributed_worker.cpp
+  src/message_forwarders.cpp
   src/graph_distrib_update.cpp
 )
-add_dependencies(Landscape GraphZeppelin)
-target_link_libraries(Landscape PUBLIC GraphZeppelin ${MPI_LIBRARIES})
-target_include_directories(Landscape PUBLIC include/ ${MPI_C_INCLUDE_PATH})
+add_dependencies(DistribUpdateStreamingCC GraphZeppelin)
+target_link_libraries(DistribUpdateStreamingCC PUBLIC GraphZeppelin ${MPI_LIBRARIES})
+target_include_directories(DistribUpdateStreamingCC PUBLIC include/ ${MPI_C_INCLUDE_PATH})
 # TODO: Is MPI INCLUDE PATH necessary?
 if(MPI_COMPILE_FLAGS)
-  set_target_properties(Landscape PROPERTIES
+  set_target_properties(DistribUpdateStreamingCC PROPERTIES
     COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
 endif()
 if(MPI_LINK_FLAGS)
-  set_target_properties(Landscape PROPERTIES
+  set_target_properties(DistribUpdateStreamingCC PROPERTIES
     LINK_FLAGS "${MPI_LINK_FLAGS}")
 endif()
 
 # A library for testing our code for distributing
 # generating sketch deltas
-add_library(LandscapeVerify
+add_library(DistribUpdateStreamingVerifyCC
   src/worker_cluster.cpp
   src/work_distributor.cpp
   src/distributed_worker.cpp
+  src/message_forwarders.cpp
   src/graph_distrib_update.cpp
 )
-add_dependencies(LandscapeVerify GraphZeppelinVerifyCC)
-target_link_libraries(LandscapeVerify PUBLIC GraphZeppelinVerifyCC ${MPI_LIBRARIES})
-target_include_directories(LandscapeVerify PUBLIC include/ ${MPI_C_INCLUDE_PATH})
+add_dependencies(DistribUpdateStreamingVerifyCC GraphZeppelinVerifyCC)
+target_link_libraries(DistribUpdateStreamingVerifyCC PUBLIC GraphZeppelinVerifyCC ${MPI_LIBRARIES})
+target_include_directories(DistribUpdateStreamingVerifyCC PUBLIC include/ ${MPI_C_INCLUDE_PATH})
 # TODO: Is MPI INCLUDE PATH necessary?
 if(MPI_COMPILE_FLAGS)
-  set_target_properties(LandscapeVerify PROPERTIES
+  set_target_properties(DistribUpdateStreamingVerifyCC PROPERTIES
     COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
 endif()
 if(MPI_LINK_FLAGS)
-  set_target_properties(LandscapeVerify PROPERTIES
+  set_target_properties(DistribUpdateStreamingVerifyCC PROPERTIES
     LINK_FLAGS "${MPI_LINK_FLAGS}")
 endif()
 
@@ -106,20 +113,26 @@ add_executable(distrib_tests
   ${GraphZeppelin_SOURCE_DIR}/test/util/graph_gen.cpp
   ${GraphZeppelin_SOURCE_DIR}/test/util/file_graph_verifier.cpp
 )
-add_dependencies(distrib_tests LandscapeVerify)
-target_link_libraries(distrib_tests PUBLIC LandscapeVerify)
+add_dependencies(distrib_tests DistribUpdateStreamingVerifyCC)
+target_link_libraries(distrib_tests PUBLIC DistribUpdateStreamingVerifyCC)
 
 add_executable(speed_expr
   experiment/cluster_speed_expr.cpp
 )
-add_dependencies(speed_expr Landscape)
-target_link_libraries(speed_expr PUBLIC Landscape)
+add_dependencies(speed_expr DistribUpdateStreamingCC)
+target_link_libraries(speed_expr PUBLIC DistribUpdateStreamingCC)
 
 add_executable(query_expr
   experiment/cluster_query_expr.cpp  
 )
-add_dependencies(query_expr Landscape)
-target_link_libraries(query_expr PUBLIC Landscape)
+add_dependencies(query_expr DistribUpdateStreamingCC)
+target_link_libraries(query_expr PUBLIC DistribUpdateStreamingCC)
+
+add_executable(correctness_expr
+  experiment/cont_expr.cpp
+)
+add_dependencies(correctness_expr DistribUpdateStreamingVerifyCC)
+target_link_libraries(correctness_expr PUBLIC DistribUpdateStreamingVerifyCC)
 
 #####################################################################
 #####################    Streaming utilities    #####################
@@ -130,14 +143,14 @@ add_executable(binary_to_static
 add_dependencies(binary_to_static GraphZeppelinVerifyCC)
 target_link_libraries(binary_to_static PUBLIC GraphZeppelinVerifyCC)
 
-add_executable(stream_gen
+#add_executable(stream_gen
 #    tools/streaming/hash_streamer.cpp
 #    tools/streaming/gz_specific/gz_nonsequential_streamer.cpp
-    tools/streaming/gz_specific/gz_sequential_streamer.cpp
-    tools/streaming/stream_finder.cpp
-)
-add_dependencies(stream_gen GraphZeppelin)
-target_link_libraries(stream_gen PUBLIC GraphZeppelin)
+#    tools/streaming/gz_specific/gz_sequential_streamer.cpp
+#    tools/streaming/stream_finder.cpp
+#)
+#add_dependencies(stream_gen GraphZeppelin)
+#target_link_libraries(stream_gen PUBLIC GraphZeppelin)
 
 add_executable(mpi_experiment
   experiment/mpi_message_throughput.cpp
