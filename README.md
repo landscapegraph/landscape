@@ -1,5 +1,6 @@
-# DistributedStreamingCC
-A distributed extension to GraphZeppelin (GraphStreamingCC)
+# Landscape
+A distributed algorithm for solving the connected components problem on dynamic graph streams using linear sketches. 
+Designed to distribute CPU intensive computation across many machines to achieve update performance within a small constant factor of single machine sequential RAM bandwidth.
 
 ## Running experiments
 1. If the stream lives in a file, ensure that the file has been brought into the file cache before beginning the experiment. One way to do this is `cat 'stream_file' > /dev/null`
