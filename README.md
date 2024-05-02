@@ -60,7 +60,7 @@ Use the `mpirun` command to run mpi programs. The `-np` option is used to contro
 
 To run our unit tests:
 ```
-mpirun -np 22 ./distrib_tests
+mpirun -np 22 -oversubscribe ./distrib_tests
 ```
 
 ## AWS Cluster Provisioning
