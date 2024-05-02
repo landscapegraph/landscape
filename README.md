@@ -41,7 +41,7 @@ These commands install cmake version 3.23 but any version >= 3.16 will work.
 1. Download openmpi from https://download.open-mpi.org/release/open-mpi/v4.1/openmpi-4.1.3.tar.bz2.
 2. Run the following commands to install openmpi
 ```
-tar -xvj openmpi-4.1.3-tar.bz2
+tar -xvjf openmpi-4.1.3-tar.bz2
 cd openmpi-4.1.3
 ./configure --prefix=/usr/local
 make -j all
