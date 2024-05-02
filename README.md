@@ -1,11 +1,44 @@
 # Landscape
 A distributed algorithm for solving the connected components problem on dynamic graph streams using linear sketches. Designed to distribute CPU intensive computation across many machines to achieve update performance within a small constant factor of single machine sequential RAM bandwidth.
 
+## Requirements
+- OS: Unix (Not Mac): Tested on Ubuntu
+- cmake >= 3.16
+- openmpi 4.1.3
+- c++14
+
+Instructions for installing cmake and openmpi are found below.
+
 ## Single Machine Setup
 Our experiments and unit tests are primarily intended for use on a AWS cluster. However, for the purpose of exploring our code and how it works these instructions will allow you to run it locally on a single machine.
 
+### Install packages
+- git
+- gcc/g++
+
+### Install cmake version 3.16+
+First Step:
+#### x86_64
+```
+wget https://github.com/Kitware/CMake/releases/download/v3.23.0-rc2/cmake-3.23.0-rc2-linux-x86_64.sh
+sudo mkdir /opt/cmake
+sudo sh cmake-3.23.0-rc2-linux-x86_64.sh --prefix=/opt/cmake
+```
+#### aarch64
+```
+wget https://github.com/Kitware/CMake/releases/download/v3.23.0-rc5/cmake-3.23.0-rc5-linux-aarch64.sh
+sudo mkdir /opt/cmake
+sudo sh cmake-3.23.0-rc5-linux-aarch64.sh --prefix=/opt/cmake
+```
+Second Step:
+```
+sudo ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake
+```
+When running cmake .sh script enter y to license and n to install location.  
+These commands install cmake version 3.23 but any version >= 3.16 will work.
+
 ### Install OpenMPIv4.1.3
-1. Download openmpi from [source](https://download.open-mpi.org/release/open-mpi/v4.1/openmpi-4.1.3.tar.bz2).
+1. Download openmpi from https://download.open-mpi.org/release/open-mpi/v4.1/openmpi-4.1.3.tar.bz2.
 2. Run the following commands to install openmpi
 ```
 tar -xvj openmpi-4.1.3-tar.bz2
@@ -16,6 +49,11 @@ sudo make install
 sudo ldconfig
 cd -
 ```
+
+### Clone and build this repo
+1. Clone this repository
+2. Create a `build` directory
+3. Initialize cmake and build the code in the build directory `cd build; cmake ..; make -j`
 
 ### Run executables
 Use the `mpirun` command to run mpi programs. The `-np` option is used to control the number of mpi processes. Our code requires at least 22 processes. For a single machine, it is suboptimal to use more than 22 processes. 
@@ -38,39 +76,21 @@ The script only reads properly tagged EC2 instances. The Master must be tagged '
 
 ## Main Node Installation and Setup
 
-### 1. Install packages
+### Install packages
 ```
 sudo yum update -y
 sudo yum install -y tmux htop git gcc-c++ jq python3-pip
 pip install ansible
 ```
 
-### 2. Install cmake version 3.16+
-First Step:
-#### x86_64
-```
-wget https://github.com/Kitware/CMake/releases/download/v3.23.0-rc2/cmake-3.23.0-rc2-linux-x86_64.sh
-sudo mkdir /opt/cmake
-sudo sh cmake-3.23.0-rc2-linux-x86_64.sh --prefix=/opt/cmake
-```
-#### aarch64
-```
-wget https://github.com/Kitware/CMake/releases/download/v3.23.0-rc5/cmake-3.23.0-rc5-linux-aarch64.sh
-sudo mkdir /opt/cmake
-sudo sh cmake-3.23.0-rc5-linux-aarch64.sh --prefix=/opt/cmake
-```
-Second Step:
-```
-sudo ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake
-```
-When running cmake .sh script enter y to license and n to install location.  
-These commands install cmake version 3.23 but any version >= 3.16 will work.
+### Install cmake
+Follow the instructions in the single machine setup for installing cmake
 
-### 4. Setup ssh keys
+### Setup ssh keys
 * Copy EMR.pem to cluster `rsync -ve "ssh -i </path/to/EMR.pem>" </path/to/EMR.pem> <AWS-user>@<main_node_dns_addr>:.`
 * Ensure key being used is default rsa key for ssh `id_rsa` for example `cp EMR.pem ~/.ssh/id_rsa`
 
-### 5. Clone Landscape Repo
+### Clone Landscape Repo
 
 ## Cluster Setup
 
