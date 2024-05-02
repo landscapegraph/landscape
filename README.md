@@ -1,11 +1,31 @@
 # Landscape
 A distributed algorithm for solving the connected components problem on dynamic graph streams using linear sketches. Designed to distribute CPU intensive computation across many machines to achieve update performance within a small constant factor of single machine sequential RAM bandwidth.
 
-## Running experiments
-1. If the stream lives in a file, ensure that the file has been brought into the file cache before beginning the experiment. One way to do this is `cat 'stream_file' > /dev/null`
-2. You can monitor the status of the cluster by, in a seperate window, running the command `watch -n 1 cat cluster_status.txt`
+## Single Machine Setup
+Our experiments and unit tests are primarily intended for use on a AWS cluster. However, for the purpose of exploring our code and how it works these instructions will allow you to run it locally on a single machine.
 
-## Cluster Provisioning
+### Install OpenMPIv4.1.3
+1. Download openmpi from [source](https://download.open-mpi.org/release/open-mpi/v4.1/openmpi-4.1.3.tar.bz2).
+2. Run the following commands to install openmpi
+```
+tar -xvj openmpi-4.1.3-tar.bz2
+cd openmpi-4.1.3
+./configure --prefix=/usr/local
+make -j all
+sudo make install
+sudo ldconfig
+cd -
+```
+
+### Run executables
+Use the `mpirun` command to run mpi programs. The `-np` option is used to control the number of mpi processes. Our code requires at least 22 processes. For a single machine, it is suboptimal to use more than 22 processes. 
+
+To run our unit tests:
+```
+mpirun -np 22 ./distrib_tests
+```
+
+## AWS Cluster Provisioning
 ### Ensure the master is able to read IPS
 There is an IAM Role that allows the EC2 instance to read IPS. This is used to automatically get the IPS.
 ![image](https://user-images.githubusercontent.com/4708326/164508403-70fbb271-fa4c-4145-9093-ff86320e1bba.png)
@@ -70,6 +90,10 @@ mpirun -np 22 -hostfile hostfile -rf rankfile ./distrib_tests
 ```
 -np denotes the number of processes to run. Should be number of worker nodes +21.
 
+## Running experiments
+1. If the stream lives in a file, ensure that the file has been brought into the file cache before beginning the experiment. One way to do this is `cat 'stream_file' > /dev/null`
+2. You can monitor the status of the cluster by, in a seperate window, running the command `watch -n 1 cat cluster_status.txt`
+
 ## Cluster Setup (Manual)
 Ansible files for setting up the cluster are found under `tools/ansible`.  
 Ansible commands are run with `ansible-playbook -i /path/to/inventory.ini /path/to/<script>.yaml`.
@@ -99,22 +123,6 @@ EBS disks are generally found installed at `/mnt/nvmeXnX` where X is the disk nu
 * Create the mount point directory `sudo mkdir /mnt/<mnt_point>`
 * Mount the device `sudo mount /dev/<device> /mnt/<mnt_point>`
 * Adjust owner and permissions of mount point `sudo chown -R <user> /mnt/<mnt_point>` and `chmod a+rw /mnt/<mnt_point>` 
-
-## Single Machine Setup
-
-### 1. Install OpenMPI
-For Ubuntu the following will install openmpi
-```
-sudo apt update
-sudo apt install libopenmpi-dev
-```
-Google is your friend for other operating systems :)
-
-### 2. Run executables
-Use the `mpirun` command to run mpi programs. For example, to run the unit tests with 4 processes, the following command is used.
-```
-mpirun -np 4 ./distrib_tests
-```
 
 ## Tips for Debugging with MPI
 If you want to run the code using a debugging tool like gdb you can perform the following steps.
