@@ -25,4 +25,3 @@ sudo yum install -y tmux git
 ```
 7. Clone this repository. IMPORTANT: Ensure the repository is cloned to the ec2-user home directory and that the name is unchanged. `~/Landscape`
 8. From `~\Landscape` run `./runme.sh`. This script will prompt you to agree to the use of sudo commands and to enter your aws secret key and default region. 
->>>>>>> Stashed changes
