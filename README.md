@@ -1,5 +1,8 @@
 # Landscape
-A distributed algorithm for solving the connected components problem on dynamic graph streams using linear sketches. Designed to distribute CPU intensive computation across many machines to achieve update performance within a small constant factor of single machine sequential RAM bandwidth.
+Linear sketching for the connected components and k-edge connectivity problems. Landscape distributes the CPU intensive work of performing sketch updates to many worker nodes while keeping sketch data on the main node. The result is that we can process graph update streams at near sequential RAM bandwidth speeds.
+
+## Using Landscape
+Landscape is a c++ library built with cmake. You can easily use Landscape in your code through cmake with FetchContent or ExternalProjectAdd.
 
 ## Requirements
 - OS: Unix (Not Mac): Tested on Ubuntu
@@ -7,146 +10,19 @@ A distributed algorithm for solving the connected components problem on dynamic 
 - openmpi 4.1.3
 - c++14
 
-Instructions for installing cmake and openmpi are found below.
+## Reproducing Our Experiments on EC2
+Landscape appears in [ALENEX'25](). You can reproduce our experimental results by following these instructions.
 
-## Single Machine Setup
-Our experiments and unit tests are primarily intended for use on a AWS cluster. However, for the purpose of exploring our code and how it works these instructions will allow you to run it locally on a single machine.
-
-### Install packages
-- git
-- gcc/g++
-
-### Install cmake version 3.16+
-First Step:
-#### x86_64
-```
-wget https://github.com/Kitware/CMake/releases/download/v3.23.0-rc2/cmake-3.23.0-rc2-linux-x86_64.sh
-sudo mkdir /opt/cmake
-sudo sh cmake-3.23.0-rc2-linux-x86_64.sh --prefix=/opt/cmake
-```
-#### aarch64
-```
-wget https://github.com/Kitware/CMake/releases/download/v3.23.0-rc5/cmake-3.23.0-rc5-linux-aarch64.sh
-sudo mkdir /opt/cmake
-sudo sh cmake-3.23.0-rc5-linux-aarch64.sh --prefix=/opt/cmake
-```
-Second Step:
-```
-sudo ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake
-```
-When running cmake .sh script enter y to license and n to install location.  
-These commands install cmake version 3.23 but any version >= 3.16 will work.
-
-### Install OpenMPIv4.1.3
-1. Download openmpi from https://download.open-mpi.org/release/open-mpi/v4.1/openmpi-4.1.3.tar.bz2.
-2. Run the following commands to install openmpi
-```
-tar -xvjf openmpi-4.1.3.tar.bz2
-cd openmpi-4.1.3
-./configure --prefix=/usr/local
-make -j all
-sudo make install
-sudo ldconfig
-cd -
-```
-
-### Clone and build this repo
-1. Clone this repository
-2. Enter the project directory and create a `build` directory within it
-3. Initialize cmake and build the code in the build directory `cd build; cmake ..; make -j`
-
-### Run executables
-Use the `mpirun` command to run mpi programs. The `-np` option is used to control the number of mpi processes. Our code requires at least 22 processes. For a single machine, it is suboptimal to use more than 22 processes. 
-
-To run our unit tests:
-```
-mpirun -np 22 -oversubscribe ./distrib_tests
-```
-
-## AWS Cluster Provisioning
-### Ensure the master is able to read IPS
-There is an IAM Role that allows the EC2 instance to read IPS. This is used to automatically get the IPS.
-![image](https://user-images.githubusercontent.com/4708326/164508403-70fbb271-fa4c-4145-9093-ff86320e1bba.png)
-
-### Tag the Master and Worker nodes
-
-The script only reads properly tagged EC2 instances. The Master must be tagged 'ClusterNodeType:Master' to appear at the top of the host files. The Workers must be tagged 'ClusterNodeType:Worker'.
-
-![image](https://user-images.githubusercontent.com/4708326/164511717-02f2feee-a9f8-4b04-a35e-fb53be5140ee.png)
-
-## Main Node Installation and Setup
-
-### Install packages
+1. Create an AWS Secret Key. `IAM->Users->YourUsername->Security credentials`
+2. Provision the Main Node on EC2. Launch a `c5n.18xlarge` EC2 instance. You will need to generate an ssh keypair through the EC2 interface as part of launching the instance. Call this key `Creation_Key`.
+3. Download the ssh key you generated.
+4. Upload the ssh keypair to the main node. `rsync -ve "ssh -i </path/to/key>" </path/to/key> ec2-user@<public-dns-addr-of-main>:~/.ssh/id_rsa` You can see the public dns address of the main node under instance details.
+5. Connect to the main node. `ssh -i <path/to/key> ec2-user@<public-dns-addr-of-main>`
+6. Install packages
 ```
 sudo yum update -y
-sudo yum install -y tmux htop git gcc-c++ jq python3-pip
-pip install ansible
+sudo yum install -y tmux git
 ```
-
-### Install cmake
-Follow the instructions in the single machine setup for installing cmake
-
-### Setup ssh keys
-* Copy EMR.pem to cluster `rsync -ve "ssh -i </path/to/EMR.pem>" </path/to/EMR.pem> <AWS-user>@<main_node_dns_addr>:.`
-* Ensure key being used is default rsa key for ssh `id_rsa` for example `cp EMR.pem ~/.ssh/id_rsa`
-
-### Clone Landscape Repo
-
-## Cluster Setup
-
-### Run `setup_tagged_workers.sh`  
-This bash script will construct the ansible `inventory.ini` file; and the MPI `hostfile` and `rankfile`. The arguments to the script are the EC2 region where our machines are, number of physical CPUs on the main node, and number of physical CPUs on the worker nodes.
-
-Example:
-```
-./setup_tagged_workers.sh us-west-2 36 8
-```
-The script will automatically set the known_hosts for all the machines in the cluster to whatever ssh-keyscan finds (this is a slight security issue if you don't trust the cluster but should be fine as we aren't transmitting sensative data). It will additionally confirm with you that the `inventory.ini` and `hostfile` it creates look reasonable.
-
-### Run unit tests
-After running the setup script you should be able to run the unit tests from the build directory.
-```
-mpirun -np 22 -hostfile hostfile -rf rankfile ./distrib_tests
-```
--np denotes the number of processes to run. Should be number of worker nodes +21.
-
-## Running experiments
-1. If the stream lives in a file, ensure that the file has been brought into the file cache before beginning the experiment. One way to do this is `cat 'stream_file' > /dev/null`
-2. You can monitor the status of the cluster by, in a seperate window, running the command `watch -n 1 cat cluster_status.txt`
-
-## Cluster Setup (Manual)
-Ansible files for setting up the cluster are found under `tools/ansible`.  
-Ansible commands are run with `ansible-playbook -i /path/to/inventory.ini /path/to/<script>.yaml`.
-
-### 1. Distribute ssh keys to cluster
-* Run ansible file `ssh.yaml` with `ansible-playbook -i inventory.ini landscape/tools/ansible/ssh.yaml`
-
-### 2. Install MPI on nodes in cluster
-* Run ansible file `mpi.yaml` with `ansible-playbook -i inventory.ini landscape/tools/ansible/mpi.yaml`
-* Run `source ~/.bashrc` in open terminal on main node
-
-### 3. Build Landscape Repo
-* make `build` directory in project repo
-* run `cmake .. ; make -j` in build directory
-
-### 4. Distribute executables and hostfile to worker nodes
-*  Run ansible file `files.yaml` with `ansible-playbook -i inventory.ini landscape/tools/ansible/files.yaml`
-
-### EFA Installation instructions
-* Follow the instructions at https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/efa-start.html#efa-start-security
-
-## Amazon Storage
-### EBS Storage
-EBS disks are generally found installed at `/mnt/nvmeXnX` where X is the disk number. In order to use them, the disk must be formatted and then mounted.
-* `sudo lsblk -f` to list all devices
-* (Optional) If no filesystem exists on the device than run `sudo mkfs -t xfs /dev/<device>` to format the drive. This will overwrite the content on the device so DO NOT do this if a filesystem already exists.
-* Create the mount point directory `sudo mkdir /mnt/<mnt_point>`
-* Mount the device `sudo mount /dev/<device> /mnt/<mnt_point>`
-* Adjust owner and permissions of mount point `sudo chown -R <user> /mnt/<mnt_point>` and `chmod a+rw /mnt/<mnt_point>` 
-
-## Tips for Debugging with MPI
-If you want to run the code using a debugging tool like gdb you can perform the following steps.
-1. Compile with debugging flags `cmake -DCMAKE_BUILD_TYPE=Debug .. ; make`
-2. Launch the mpi task with each process in its own window using xterm `mpirun -np <num_proc> term -hold -e gdb <executable>`
-
-Print statement debugging can also be helpful, as even when running in a cluster across many machines, all the output to console across the workers is printed out by the main process. 
+7. Clone this repository. IMPORTANT: Ensure the repository is cloned to the ec2-user home directory and that the name is unchanged. `~/Landscape`
+8. From `~\Landscape` run `./runme.sh`. This script will prompt you to agree to the use of sudo commands and to enter your aws secret key and default region. 
+>>>>>>> Stashed changes
