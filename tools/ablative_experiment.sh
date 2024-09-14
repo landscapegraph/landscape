@@ -32,7 +32,7 @@ bash scale_experiment.sh $result_file 32 32 1 3 ', Cube + Standalone'
 
 python3 aws/run_first_n_workers.py --num_workers 48
 yes | bash setup_tagged_workers.sh $region 36 8
-bash scale_experiment.sh $result_file 48 48 1 5 ', Cube + Standalone'
+bash scale_experiment.sh $result_file 48 48 1 3 ', Cube + Standalone'
 
 
 # CAMEOSKETCH + STANDALONE
